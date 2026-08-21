@@ -1,0 +1,16 @@
+# secrets
+.env
+
+# runtime state / sessions
+state.json
+*.session
+*.session-journal
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# downloads & logs
+tmp_downloads/
+insta2tg.log
