@@ -1,8 +1,16 @@
 [project]
 name = "insta2tg"
-version = "0.1.0"
+version = "0.2.0"
+description = "Mirror Instagram content (posts, reels, stories, highlights, ...) to Telegram channels"
 requires-python = ">=3.14"
 dependencies = [
     "instaloader>=4.15.3",
     "telethon>=1.44.0",
 ]
+
+[project.scripts]
+insta2tg = "insta2tg.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
