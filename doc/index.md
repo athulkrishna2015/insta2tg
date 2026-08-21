@@ -13,6 +13,7 @@ Complete documentation for **insta2tg** — mirror Instagram content into Telegr
 | [State management](state-management.md) | `state.json`, first-run behavior, `--backfill`, `--since`, dedupe |
 | [instaloader parity](instaloader-parity.md) | Which instaloader features are supported, mapped, or N/A |
 | [Troubleshooting](troubleshooting.md) | Common errors and fixes |
+| [FAQ](faq.md) | Single posts, `--since`, albums, seen-state, captions, 429 |
 
 ## Quick start
 

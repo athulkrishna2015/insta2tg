@@ -76,4 +76,6 @@ See [Login](login.md) for details and priority order.
 | `--loop` | off | Keep checking forever |
 | `--interval SEC` | `900` | Sleep between cycles when looping |
 | `--delay SEC` | `3` | Pause between uploads |
+| `--no-source` | off | Omit the Instagram source link from the caption |
+| `--ignore-seen` | off | Upload regardless of seen-history; record nothing in state |
 | `--dry-run` | off | List what would be posted without uploading |

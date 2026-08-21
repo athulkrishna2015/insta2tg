@@ -38,8 +38,11 @@ uv run insta2tg <username> --channel @my_channel \
 # same, by bare shortcode, previewed first
 uv run insta2tg <username> --channel @my_channel --since CxYz123 --dry-run
 
-# a single post only
-uv run insta2tg --channel @my_channel -- -CxYz123
+# widen the scan window if there are more than 30 posts after it
+uv run insta2tg <username> --channel @my_channel --since CxYz123 -c 100
+
+# a single post only (re-uploads it, records nothing)
+uv run insta2tg --channel @my_channel --ignore-seen -- -CxYz123
 ```
 
 ## Filtering
@@ -80,6 +83,9 @@ uv run insta2tg <username> --channel @my_channel --slide 2
 ```bash
 # append location + map link and top comments to every caption
 uv run insta2tg <username> --channel @my_channel -G -C
+
+# drop the instagram source link from captions (frees caption space)
+uv run insta2tg <username> --channel @my_channel --no-source
 ```
 
 ## Login variants

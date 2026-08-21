@@ -28,7 +28,15 @@ Values are unix timestamps of when the item was handled. A value of `0` marks a
 | `--backfill N` | On first run, upload the N newest per target instead |
 | `--backfill -1` | On first run, upload everything in the scan window |
 | `--since POST` | Upload every item newer than that post (overrides first-run rule) |
+| `--ignore-seen` | Ignore the history completely: upload everything matching the filters and record nothing — for explicit one-off uploads/reposts |
 | Download/upload error | Item marked with `0`, run continues with the next one |
+
+`--ignore-seen` also bypasses the `--backfill` cap, so a single post can be
+re-posted at any time:
+
+```bash
+uv run insta2tg --channel @my_channel --ignore-seen -- -CxYz123
+```
 
 Because dedupe is shortcode-based, overlapping sources are safe: e.g. mirroring
 both `posts` and `reels` of the same account, or the same account into runs

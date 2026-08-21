@@ -32,6 +32,7 @@ Full documentation lives in [`doc/`](doc/index.md):
 | [State management](doc/state-management.md) | `state.json`, first run, `--backfill`, `--since`, dedupe |
 | [instaloader parity](doc/instaloader-parity.md) | Supported / mapped / N/A features |
 | [Troubleshooting](doc/troubleshooting.md) | Common errors and fixes |
+| [FAQ](doc/faq.md) | Single posts, `--since`, albums, seen-state, captions, 429 |
 
 ## Project structure
 
