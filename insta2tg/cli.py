@@ -104,6 +104,11 @@ def parse_args() -> argparse.Namespace:
                    help="upload every item published after this post")
     g.add_argument("--delay", type=int, default=3,
                    help="seconds between uploads (default: 3)")
+    g.add_argument("--no-source", action="store_true",
+                   help="omit the instagram source link from the caption")
+    g.add_argument("--ignore-seen", action="store_true",
+                   help="upload regardless of what was already posted and "
+                        "do not record these uploads in the state file")
     g.add_argument("-q", "--quiet", action="store_true",
                    help="suppress informational output")
     g.add_argument("--dry-run", action="store_true",

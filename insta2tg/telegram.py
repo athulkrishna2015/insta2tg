@@ -51,6 +51,7 @@ async def resolve_channel(tg: TelegramClient, value: str):
 
 async def handle_item(tg, channel, L, item, state, args) -> None:
     sc = item.shortcode
+    record = not args.ignore_seen
     tmp = Path(tempfile.mkdtemp(prefix=f"i2t_{sc}_", dir="tmp_downloads"))
     try:
         log(f"[dl] {sc} ({post_date(item):%Y-%m-%d %H:%M}) ...")
@@ -62,17 +63,20 @@ async def handle_item(tg, channel, L, item, state, args) -> None:
         media = collect_media(tmp, args)
         if not media:
             log(f"[!] no media for {sc} (filtered or empty), skipping")
-            mark_seen(state, sc, False)
+            if record:
+                mark_seen(state, sc, False)
             return
 
         caption = enrich_caption(item, args)
         await tg.send_file(channel, [str(f) for f in media],
                            caption=caption, supports_streaming=True)
-        mark_seen(state, sc, True)
+        if record:
+            mark_seen(state, sc, True)
         log(f"[tg] uploaded {sc} ({len(media)} file(s))")
     except Exception as e:
         log(f"[!] failed on {sc}: {e}")
-        mark_seen(state, sc, False)
+        if record:
+            mark_seen(state, sc, False)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
         save_state(args.state, state)

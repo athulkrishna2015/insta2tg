@@ -28,9 +28,11 @@ def enrich_caption(item, args) -> str:
         except Exception:
             pass
 
-    link = post_link(item)
+    link = None if getattr(args, "no_source", False) else post_link(item)
     text = "\n\n".join(p for p in parts if p)
-    room = CAPTION_LIMIT - len(link) - 2
+    room = CAPTION_LIMIT if link is None else CAPTION_LIMIT - len(link) - 2
     if len(text) > room:
         text = text[:room].rstrip() + "…"
+    if link is None:
+        return text
     return f"{text}\n\n{link}" if text else link

@@ -35,7 +35,8 @@ def resolve_since_post(L, value: str):
 
 
 def fetch_new_items(L, targets, state, kinds, window, backfill,
-                    post_filter, story_filter, since_dt=None) -> list:
+                    post_filter, story_filter, since_dt=None,
+                    ignore_seen=False) -> list:
     known = state["uploaded"]
     first_run = not known
     new = []
@@ -48,17 +49,23 @@ def fetch_new_items(L, targets, state, kinds, window, backfill,
             log(f"[!] stream {stream['label']} failed: {e}")
             continue
 
-        fresh = [i for i in items if i.shortcode not in known]
-        if since_dt is not None:
+        if ignore_seen:
+            fresh = list(items)
+        else:
+            fresh = [i for i in items if i.shortcode not in known]
+            if since_dt is not None:
+                fresh = [i for i in fresh
+                         if post_date(i) and post_date(i) > since_dt]
+            elif first_run and backfill == 0:
+                for i in items:
+                    mark_seen(state, i.shortcode, True)
+                log(f"[ig] {stream['label']}: marked {len(items)} existing as seen")
+                fresh = []
+            elif backfill >= 0:
+                fresh = fresh[:backfill]
+        if since_dt is not None and ignore_seen:
             fresh = [i for i in fresh
                      if post_date(i) and post_date(i) > since_dt]
-        elif first_run and backfill == 0:
-            for i in items:
-                mark_seen(state, i.shortcode, True)
-            log(f"[ig] {stream['label']}: marked {len(items)} existing as seen")
-            fresh = []
-        elif backfill >= 0:
-            fresh = fresh[:backfill]
         new.extend(fresh)
 
     return sorted(new, key=lambda i: post_date(i) or 0)  # oldest first

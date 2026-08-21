@@ -58,15 +58,17 @@ async def run(args) -> None:
 
     while True:
         new = fetch_new_items(L, targets, state, kinds, window, args.backfill,
-                              post_filter, story_filter, since_dt=since_dt)
+                              post_filter, story_filter, since_dt=since_dt,
+                              ignore_seen=args.ignore_seen)
         if new:
             log(f"[ig] {len(new)} item(s) to upload")
         for item in new:
             if args.dry_run:
                 cap = (item.caption or "").replace("\n", " ")[:60]
                 log(f"[dry] {item.shortcode} {post_date(item):%Y-%m-%d} | {cap}")
-                mark_seen(state, item.shortcode, True)
-                save_state(args.state, state)
+                if not args.ignore_seen:
+                    mark_seen(state, item.shortcode, True)
+                    save_state(args.state, state)
             else:
                 await handle_item(tg, channel, L, item, state, args)
 
