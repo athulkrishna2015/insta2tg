@@ -1,6 +1,8 @@
 """Global runtime config and logging helpers."""
 
 import os
+import sys
+from datetime import datetime
 from pathlib import Path
 
 QUIET = False
@@ -13,7 +15,19 @@ def set_quiet(q: bool) -> None:
 
 def log(msg: str) -> None:
     if not QUIET:
-        print(msg)
+        print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
+
+
+def warn(msg: str) -> None:
+    """Errors and warnings - always shown, even with -q."""
+    print(f"[{datetime.now():%H:%M:%S}] {msg}", file=sys.stderr, flush=True)
+
+
+def human_size(n: float) -> str:
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024 or unit == "GB":
+            return f"{int(n)} B" if unit == "B" else f"{n:.1f} {unit}"
+        n /= 1024
 
 
 def load_env(path: str = ".env") -> None:

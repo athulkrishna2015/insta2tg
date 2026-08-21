@@ -35,7 +35,7 @@ def enrich_caption(item, args) -> str:
     text = "\n\n".join(p for p in parts if p)
     room = CAPTION_LIMIT if link is None else CAPTION_LIMIT - len(link) - 2
     if len(text) > room:
-        text = text[:room].rstrip() + "…"
+        text = text[:room - 1].rstrip() + "…"
     if link is None:
         return text
     return f"{text}\n\n{link}" if text else link

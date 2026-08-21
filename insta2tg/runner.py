@@ -2,18 +2,81 @@
 
 import asyncio
 import os
+import time
 from pathlib import Path
 
 from telethon import TelegramClient
 
-from .config import load_env, log, set_quiet
+from .config import load_env, log, set_quiet, warn
 from .fetch import fetch_new_items, post_date, resolve_since_post
 from .filters import build_filter
 from .session import build_loader
 from .state import load_state, mark_seen, save_state
 from .streams import ALL_KINDS
 from .targets import expand_targets
-from .telegram import handle_item, resolve_channel
+from .telegram import finish_item, prepare_item, resolve_channel
+
+
+def _dur(seconds: float) -> str:
+    m, s = divmod(int(seconds), 60)
+    h, m = divmod(m, 60)
+    if h:
+        return f"{h}h{m:02d}m{s:02d}s"
+    if m:
+        return f"{m}m{s:02d}s"
+    return f"{s}s"
+
+
+async def mirror_items(tg, channel, L, new, state, args) -> None:
+    """Download and upload overlap: while one item is uploading to Telegram,
+    the next one is already downloading from Instagram.
+
+    Downloads stay sequential (one worker thread); uploads stay sequential;
+    the two stages run concurrently with backpressure (queue size 1)."""
+    q: asyncio.Queue = asyncio.Queue(maxsize=1)
+    stats = {"uploaded": 0, "skipped": 0, "failed": 0}
+    t0 = time.monotonic()
+
+    async def produce() -> None:
+        for item in new:
+            try:
+                prepped = await asyncio.to_thread(prepare_item, L, item, args)
+                await q.put(prepped)
+            except Exception as e:
+                warn(f"[!] download failed on {item.shortcode}: {e}")
+                stats["failed"] += 1
+                if not args.ignore_seen:
+                    mark_seen(state, item.shortcode, False)
+                    save_state(args.state, state)
+        await q.put(None)                      # sentinel
+
+    async def consume() -> None:
+        while True:
+            prepped = await q.get()
+            if prepped is None:
+                break
+            ok = await finish_item(tg, channel, prepped, state, args)
+            if ok:
+                stats["uploaded"] += 1
+            elif prepped["media"]:
+                stats["failed"] += 1
+            else:
+                stats["skipped"] += 1
+
+    prod = asyncio.create_task(produce())
+    cons = asyncio.create_task(consume())
+    try:
+        await cons
+        dt = time.monotonic() - t0
+        log(f"[✓] {stats['uploaded']}/{len(new)} uploaded, "
+            f"{stats['skipped']} skipped, {stats['failed']} failed "
+            f"in {_dur(dt)}")
+    finally:
+        prod.cancel()
+        try:
+            await prod
+        except asyncio.CancelledError:
+            pass
 
 
 async def run(args) -> None:
@@ -69,8 +132,9 @@ async def run(args) -> None:
                 if not args.ignore_seen:
                     mark_seen(state, item.shortcode, True)
                     save_state(args.state, state)
-            else:
-                await handle_item(tg, channel, L, item, state, args)
+
+        if new and not args.dry_run:
+            await mirror_items(tg, channel, L, new, state, args)
 
         if not args.loop:
             break

@@ -38,6 +38,17 @@ def build_loader(args) -> instaloader.Instaloader:
         iphone_support=not args.no_iphone,
     )
 
+    # Route instaloader's chatter through our logger; drop raw file-path
+    # dumps (insta2tg logs its own download/upload summaries).
+    def _ig_log(*msg, sep='', end='\n', flush=False):
+        text = sep.join(str(m) for m in msg)
+        if "tmp_downloads" in text or ".jpg" in text or ".mp4" in text:
+            return
+        if text.strip():
+            log(f"[ig] {text}")
+
+    L.context.log = _ig_log
+
     # ---- session attachment (first match wins) --------------------------
     if args.load_cookies:
         try:
