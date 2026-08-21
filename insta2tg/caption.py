@@ -29,6 +29,9 @@ def enrich_caption(item, args) -> str:
             pass
 
     link = None if getattr(args, "no_source", False) else post_link(item)
+    extra = getattr(args, "append_text", "") or ""
+    if extra:
+        parts.append(extra)
     text = "\n\n".join(p for p in parts if p)
     room = CAPTION_LIMIT if link is None else CAPTION_LIMIT - len(link) - 2
     if len(text) > room:

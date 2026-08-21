@@ -86,6 +86,14 @@ uv run insta2tg <username> --channel @my_channel -G -C
 
 # drop the instagram source link from captions (frees caption space)
 uv run insta2tg <username> --channel @my_channel --no-source
+
+# add your own text to every caption
+uv run insta2tg <username> --channel @my_channel \
+    --append-text 'via @my_channel'
+
+# everything: no link, custom footer
+uv run insta2tg <username> --channel @my_channel \
+    --no-source --append-text 'via @my_channel'
 ```
 
 ## Login variants

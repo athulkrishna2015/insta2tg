@@ -56,6 +56,11 @@ Yes: `--no-source`. The freed space goes back to the caption text (Telegram's
 truncated just enough to keep the link; with `--no-source` you get the full
 budget.
 
+**Can I add my own text to every caption?**
+
+Yes: `--append-text 'via @my_channel'`. It is appended after the original
+caption (and geotag/comments), before the source link.
+
 ## Sessions & rate limits
 
 **Do I need an Instagram session?**

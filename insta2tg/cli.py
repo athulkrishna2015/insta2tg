@@ -106,6 +106,8 @@ def parse_args() -> argparse.Namespace:
                    help="seconds between uploads (default: 3)")
     g.add_argument("--no-source", action="store_true",
                    help="omit the instagram source link from the caption")
+    g.add_argument("--append-text", metavar="TEXT", default="",
+                   help="extra text appended to every caption")
     g.add_argument("--ignore-seen", action="store_true",
                    help="upload regardless of what was already posted and "
                         "do not record these uploads in the state file")
