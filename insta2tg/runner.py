@@ -82,6 +82,9 @@ async def _set_tg_photo(tg, channel, L, target) -> bool:
     except Exception as e:
         warn(f"[!] tg-dp failed for {target}: {e}")
         return False
+
+
+async def _upload_dp(tg, channel, L, target, state, args) -> bool:
     """Check if profile picture changed (hash-based) and upload if needed."""
     chan_key = args.channel
     try:
@@ -259,7 +262,7 @@ async def run(args) -> None:
                 dp_coros = [_upload_dp(tg, channel, L, t.value, state, args)
                             for t in targets if t.kind == "profile"]
                 if dp_coros:
-                    dp_task = asyncio.create_task(asyncio.gather(*dp_coros))
+                    dp_task = asyncio.gather(*dp_coros)
             # wait for posts to finish
             await mirror_task
         elif new_posts and args.dry_run:
@@ -278,7 +281,7 @@ async def run(args) -> None:
                 dp_coros = [_upload_dp(tg, channel, L, t.value, state, args)
                             for t in targets if t.kind == "profile"]
                 if dp_coros:
-                    dp_task = asyncio.create_task(asyncio.gather(*dp_coros))
+                    dp_task = asyncio.gather(*dp_coros)
 
         # Phase 3: upload stories/highlights (fetched in parallel)
         if story_fetch_task:
