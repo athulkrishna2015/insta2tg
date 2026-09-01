@@ -82,4 +82,5 @@ See [Login](login.md) for details and priority order.
 | `--ignore-seen` | off | Upload regardless of seen-history; record nothing in state |
 | `--resume` | off | Resume from last uploaded post per Instagram source per Telegram channel |
 | `--dp` | off | Also upload profile picture if it changed since last upload |
+| `--tg-dp` | off | Set Telegram channel/group photo to Instagram profile picture |
 | `--dry-run` | off | List what would be posted without uploading |

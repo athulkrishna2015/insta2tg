@@ -117,6 +117,9 @@ def parse_args() -> argparse.Namespace:
     g.add_argument("--dp", action="store_true",
                     help="also upload profile picture if it changed since "
                          "last upload")
+    g.add_argument("--tg-dp", action="store_true",
+                    help="set telegram channel/group photo to instagram "
+                         "profile picture")
     g.add_argument("-q", "--quiet", action="store_true",
                     help="suppress informational output")
     g.add_argument("-v", "--verbose", action="store_true",

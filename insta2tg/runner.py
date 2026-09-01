@@ -11,13 +11,15 @@ from pathlib import Path
 
 import instaloader
 from telethon import TelegramClient
+from telethon.tl.functions.channels import EditPhotoRequest
+from telethon.tl.types import InputChatUploadedPhoto
 
 from .config import load_env, log, set_quiet, set_verbose, warn
 from .fetch import fetch_new_items, post_date, resolve_since_post
 from .filters import build_filter
 from .session import build_loader
 from .state import file_hash, load_dp, load_resume, load_state, mark_seen, save_dp, save_state
-from .streams import ALL_KINDS
+from .streams import ALL_KINDS, POST_LIKE, STORY_LIKE
 from .targets import expand_targets
 from .telegram import finish_item, prepare_item, resolve_channel
 
@@ -54,7 +56,32 @@ def _download_dp(L, profile, tmp_dir) -> Path | None:
         return None
 
 
-async def _upload_dp(tg, channel, L, target, state, args) -> bool:
+async def _set_tg_photo(tg, channel, L, target) -> bool:
+    """Download Instagram DP and set it as Telegram channel/group photo."""
+    try:
+        profile = instaloader.Profile.from_username(L.context, target)
+        url = profile.profile_pic_url
+        if not url:
+            warn(f"[!] no profile_pic_url for {target}")
+            return False
+
+        log(f"[tg-dp] {target}: downloading profile picture...")
+        tmp = Path(tempfile.mkdtemp(prefix=f"i2t_tgdp_{target}_", dir="tmp_downloads"))
+        try:
+            dp_path = await asyncio.to_thread(_download_dp, L, profile, tmp)
+            if not dp_path:
+                return False
+
+            log(f"[tg-dp] setting channel photo to {target}'s instagram dp...")
+            uploaded_file = await tg.upload_file(dp_path)
+            await tg(EditPhotoRequest(channel=channel, photo=InputChatUploadedPhoto(file=uploaded_file)))
+            log(f"[tg-dp] channel photo updated for {target}")
+            return True
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+    except Exception as e:
+        warn(f"[!] tg-dp failed for {target}: {e}")
+        return False
     """Check if profile picture changed (hash-based) and upload if needed."""
     chan_key = args.channel
     try:
@@ -205,28 +232,78 @@ async def run(args) -> None:
         log(f"[tg] connected as {me.username} -> {args.channel}")
 
     while True:
-        new, sc_to_target = fetch_new_items(
-            L, targets, state, kinds, window, args.backfill,
+        # Phase 1: fetch posts (fast) first
+        post_kinds = [k for k in kinds if k in POST_LIKE]
+        story_kinds = [k for k in kinds if k in STORY_LIKE]
+
+        new_posts, sc_to_target_posts = fetch_new_items(
+            L, targets, state, post_kinds, window, args.backfill,
             post_filter, story_filter, since_dt=since_dt,
             ignore_seen=args.ignore_seen, resume_dates=resume_dates)
-        if new:
-            log(f"[ig] {len(new)} item(s) to upload")
-        for item in new:
-            if args.dry_run:
+
+        # Phase 2: start uploading posts, and in parallel fetch stories/highlights + check DP
+        dp_task = None
+        story_fetch_task = None
+
+        if new_posts and not args.dry_run:
+            mirror_task = asyncio.create_task(
+                mirror_items(tg, channel, L, new_posts, state, args, sc_to_target_posts))
+            # while posts are uploading, fetch stories/highlights
+            if story_kinds:
+                story_fetch_task = asyncio.create_task(asyncio.to_thread(
+                    fetch_new_items, L, targets, state, story_kinds, window, args.backfill,
+                    post_filter, story_filter, since_dt=since_dt,
+                    ignore_seen=args.ignore_seen, resume_dates=resume_dates))
+            # also check DP in parallel
+            if args.dp:
+                dp_coros = [_upload_dp(tg, channel, L, t.value, state, args)
+                            for t in targets if t.kind == "profile"]
+                if dp_coros:
+                    dp_task = asyncio.create_task(asyncio.gather(*dp_coros))
+            # wait for posts to finish
+            await mirror_task
+        elif new_posts and args.dry_run:
+            for item in new_posts:
                 cap = (item.caption or "").replace("\n", " ")[:60]
                 log(f"[dry] {item.shortcode} {post_date(item):%Y-%m-%d} | {cap}")
                 if not args.ignore_seen:
                     mark_seen(state, item.shortcode, True)
                     save_state(args.state, state)
+            if story_kinds:
+                story_fetch_task = asyncio.create_task(asyncio.to_thread(
+                    fetch_new_items, L, targets, state, story_kinds, window, args.backfill,
+                    post_filter, story_filter, since_dt=since_dt,
+                    ignore_seen=args.ignore_seen, resume_dates=resume_dates))
+            if args.dp:
+                dp_coros = [_upload_dp(tg, channel, L, t.value, state, args)
+                            for t in targets if t.kind == "profile"]
+                if dp_coros:
+                    dp_task = asyncio.create_task(asyncio.gather(*dp_coros))
 
-        if new and not args.dry_run:
-            await mirror_items(tg, channel, L, new, state, args, sc_to_target)
+        # Phase 3: upload stories/highlights (fetched in parallel)
+        if story_fetch_task:
+            new_stories, sc_to_target_stories = await story_fetch_task
+            if new_stories:
+                log(f"[ig] {len(new_stories)} story/highlight item(s) to upload")
+                if not args.dry_run:
+                    await mirror_items(tg, channel, L, new_stories, state, args, sc_to_target_stories)
+                else:
+                    for item in new_stories:
+                        cap = (item.caption or "").replace("\n", " ")[:60]
+                        log(f"[dry] {item.shortcode} {post_date(item):%Y-%m-%d} | {cap}")
+                        if not args.ignore_seen:
+                            mark_seen(state, item.shortcode, True)
+                            save_state(args.state, state)
 
-        # check for dp changes if --dp flag is set
-        if args.dp and not args.dry_run:
+        # wait for DP task if still running
+        if dp_task:
+            await dp_task
+
+        # set telegram channel photo to instagram dp if --tg-dp flag is set
+        if args.tg_dp and not args.dry_run:
             for t in targets:
                 if t.kind == "profile":
-                    await _upload_dp(tg, channel, L, t.value, state, args)
+                    await _set_tg_photo(tg, channel, L, t.value)
 
         if not args.loop:
             break
