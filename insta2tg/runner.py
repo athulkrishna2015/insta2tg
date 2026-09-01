@@ -12,6 +12,7 @@ from pathlib import Path
 import instaloader
 from telethon import TelegramClient
 from telethon.tl.functions.channels import EditPhotoRequest
+from telethon.tl.functions.messages import EditChatPhotoRequest
 from telethon.tl.types import InputChatUploadedPhoto
 
 from .config import load_env, log, set_quiet, set_verbose, warn
@@ -72,10 +73,15 @@ async def _set_tg_photo(tg, channel, L, target) -> bool:
             if not dp_path:
                 return False
 
-            log(f"[tg-dp] setting channel photo to {target}'s instagram dp...")
+            log(f"[tg-dp] setting channel/group photo to {target}'s instagram dp...")
             uploaded_file = await tg.upload_file(dp_path)
-            await tg(EditPhotoRequest(channel=channel, photo=InputChatUploadedPhoto(file=uploaded_file)))
-            log(f"[tg-dp] channel photo updated for {target}")
+            photo = InputChatUploadedPhoto(file=uploaded_file)
+            # try channel first, then group
+            try:
+                await tg(EditPhotoRequest(channel=channel, photo=photo))
+            except (TypeError, ValueError):
+                await tg(EditChatPhotoRequest(chat_id=channel.id, photo=photo))
+            log(f"[tg-dp] photo updated for {target}")
             return True
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
