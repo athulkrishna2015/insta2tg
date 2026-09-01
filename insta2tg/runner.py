@@ -50,6 +50,17 @@ def _download_dp(L, profile, tmp_dir) -> Path | None:
         out = Path(tmp_dir) / f"dp_{profile.username}{ext}"
         urllib.request.urlretrieve(url, out)
         if out.exists() and out.stat().st_size > 0:
+            # resize to meet Telegram's minimum photo requirements
+            try:
+                from PIL import Image
+                img = Image.open(out)
+                if img.width < 160 or img.height < 160:
+                    ratio = max(160 / img.width, 160 / img.height)
+                    new_size = (int(img.width * ratio), int(img.height * ratio))
+                    img = img.resize(new_size, Image.LANCZOS)
+                    img.save(out, quality=95)
+            except ImportError:
+                pass  # PIL not available, use as-is
             return out
         return None
     except Exception as e:
