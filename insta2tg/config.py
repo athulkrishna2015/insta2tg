@@ -19,9 +19,11 @@ def set_verbose(v: bool) -> None:
     global VERBOSE
     VERBOSE = v
     if v:
-        logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
+        # only show insta2tg debug logs, suppress everything else
+        logging.basicConfig(level=logging.WARNING, format="%(message)s")
+        logging.getLogger("insta2tg").setLevel(logging.DEBUG)
         # suppress noisy third-party loggers
-        for logger in ("httpx", "httpcore", "telethon", "urllib3"):
+        for logger in ("instaloader", "httpx", "httpcore", "h2", "telethon", "urllib3"):
             logging.getLogger(logger).setLevel(logging.WARNING)
 
 

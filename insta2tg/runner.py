@@ -1,6 +1,7 @@
 """Main orchestration loop."""
 
 import asyncio
+import logging
 import os
 import shutil
 import tempfile
@@ -11,7 +12,7 @@ from pathlib import Path
 import instaloader
 from telethon import TelegramClient
 
-from .config import debug, load_env, log, set_quiet, set_verbose, warn
+from .config import load_env, log, set_quiet, set_verbose, warn
 from .fetch import fetch_new_items, post_date, resolve_since_post
 from .filters import build_filter
 from .session import build_loader
@@ -19,6 +20,8 @@ from .state import file_hash, load_dp, load_resume, load_state, mark_seen, save_
 from .streams import ALL_KINDS
 from .targets import expand_targets
 from .telegram import finish_item, prepare_item, resolve_channel
+
+logger = logging.getLogger("insta2tg")
 
 
 def _dur(seconds: float) -> str:
@@ -55,11 +58,11 @@ async def _upload_dp(tg, channel, L, target, state, args) -> bool:
     """Check if profile picture changed (hash-based) and upload if needed."""
     chan_key = args.channel
     try:
-        debug(f"[_upload_dp] loading profile for {target}")
+        logger.debug(f"[_upload_dp] loading profile for {target}")
         profile = instaloader.Profile.from_username(L.context, target)
         url = profile.profile_pic_url
         if not url:
-            debug(f"[_upload_dp] no profile_pic_url for {target}")
+            logger.debug(f"[_upload_dp] no profile_pic_url for {target}")
             return False
 
         # download current dp to compute hash
@@ -73,8 +76,8 @@ async def _upload_dp(tg, channel, L, target, state, args) -> bool:
             # compute hash and compare with stored
             current_hash = file_hash(dp_path)
             last_dp = load_dp(state, chan_key, target)
-            debug(f"[_upload_dp] stored hash: {last_dp.get('hash') if last_dp else None}")
-            debug(f"[_upload_dp] current hash: {current_hash}")
+            logger.debug(f"[_upload_dp] stored hash: {last_dp.get('hash') if last_dp else None}")
+            logger.debug(f"[_upload_dp] current hash: {current_hash}")
             if last_dp and last_dp.get("hash") == current_hash:
                 return False  # unchanged
 
