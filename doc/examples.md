@@ -45,6 +45,23 @@ uv run insta2tg <username> --channel @my_channel --since CxYz123 -c 100
 uv run insta2tg --channel @my_channel --ignore-seen -- -CxYz123
 ```
 
+## Resume from last upload
+
+```bash
+# first run: upload some recent posts to establish a baseline
+uv run insta2tg <username> --channel @my_channel --backfill 5
+
+# subsequent runs: only upload what's new since the last successful upload
+uv run insta2tg <username> --channel @my_channel --resume --loop
+
+# combine with --ignore-seen for a one-time catch-up without recording history
+uv run insta2tg <username> --channel @my_channel --resume --ignore-seen
+```
+
+The `--resume` flag tracks the last uploaded post per Instagram source per
+Telegram channel in `state.json`, so interrupting and restarting continues
+exactly where it left off.
+
 ## Filtering
 
 ```bash

@@ -77,40 +77,49 @@ F.build_streams = lambda *a, **k: [{"label": "t/posts", "items": items,
                                     "kind": "post"}]
 try:
     st = {"uploaded": {}}
-    got = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
-                          lambda i: True, lambda i: True)
+    got, _ = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
+                             lambda i: True, lambda i: True)
     ok(got == [] and set(st["uploaded"]) == {"aaa", "bbb", "ccc"},
        "first run marks everything seen, posts nothing")
 
     st = {"uploaded": {"bbb": 1}}
-    got = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
-                          lambda i: True, lambda i: True)
+    got, _ = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
+                             lambda i: True, lambda i: True)
     ok([i.shortcode for i in got] == [], "backfill 0 -> nothing on later runs")
 
-    got = fetch_new_items(None, ["t"], st, ["posts"], 10, 1,
-                          lambda i: True, lambda i: True)
+    got, _ = fetch_new_items(None, ["t"], st, ["posts"], 10, 1,
+                             lambda i: True, lambda i: True)
     ok([i.shortcode for i in got] == ["aaa"], "backfill 1")
 
-    got = fetch_new_items(None, ["t"], st, ["posts"], 10, -1,
-                          lambda i: True, lambda i: True)
+    got, _ = fetch_new_items(None, ["t"], st, ["posts"], 10, -1,
+                             lambda i: True, lambda i: True)
     ok([i.shortcode for i in got] == ["aaa", "ccc"],
        "backfill -1 -> all unseen, oldest first")
 
     since = datetime.now(timezone.utc) - timedelta(days=15)
-    got = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
-                          lambda i: True, lambda i: True, since_dt=since)
+    got, _ = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
+                             lambda i: True, lambda i: True, since_dt=since)
     ok([i.shortcode for i in got] == ["ccc"], "--since filters older")
 
     st = {"uploaded": {"ccc": 1}}
-    got = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
-                          lambda i: True, lambda i: True, since_dt=since)
+    got, _ = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
+                             lambda i: True, lambda i: True, since_dt=since)
     ok([i.shortcode for i in got] == [], "seen item skipped even with --since")
 
-    got = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
-                          lambda i: True, lambda i: True, since_dt=since,
-                          ignore_seen=True)
+    got, _ = fetch_new_items(None, ["t"], st, ["posts"], 10, 0,
+                             lambda i: True, lambda i: True, since_dt=since,
+                             ignore_seen=True)
     ok([i.shortcode for i in got] == ["ccc"],
        "--ignore-seen bypasses history (still respects --since)")
+
+    # --resume tests (non-first-run: state already has some uploaded items)
+    st = {"uploaded": {"aaa": 1}, "resume": {}}
+    resume_ts = (datetime.now(timezone.utc) - timedelta(days=25)).timestamp()
+    got, _ = fetch_new_items(None, ["t"], st, ["posts"], 10, -1,
+                             lambda i: True, lambda i: True,
+                             resume_dates={"t": datetime.fromtimestamp(resume_ts, tz=timezone.utc)})
+    ok([i.shortcode for i in got] == ["bbb", "ccc"],
+       "--resume filters items older than last upload")
 finally:
     F.build_streams = orig_build_streams
 
@@ -193,9 +202,10 @@ async def test_pipeline():
         state = {"uploaded": {}}
         args = SimpleNamespace(**{**vars(dl_args()),
                                   "ignore_seen": True, "delay": 0,
-                                  "state": "state.json"})
+                                  "state": "state.json", "channel": "@test"})
         news = [item("p1"), item("p2"), item("p3")]
-        await mirror_items(tg, None, L, news, state, args)
+        sc_to_target = {"p1": "t", "p2": "t", "p3": "t"}
+        await mirror_items(tg, None, L, news, state, args, sc_to_target)
 
         ok(len(tg.sent) == 3, "pipeline uploaded all 3")
         ev = {e[0]: e for e in L.events}

@@ -109,10 +109,16 @@ def parse_args() -> argparse.Namespace:
     g.add_argument("--append-text", metavar="TEXT", default="",
                    help="extra text appended to every caption")
     g.add_argument("--ignore-seen", action="store_true",
-                   help="upload regardless of what was already posted and "
-                        "do not record these uploads in the state file")
+                    help="upload regardless of what was already posted and "
+                         "do not record these uploads in the state file")
+    g.add_argument("--resume", action="store_true",
+                    help="resume from the last uploaded post per "
+                         "instagram source per telegram channel")
+    g.add_argument("--dp", action="store_true",
+                    help="also upload profile picture if it changed since "
+                         "last upload")
     g.add_argument("-q", "--quiet", action="store_true",
-                   help="suppress informational output")
+                    help="suppress informational output")
     g.add_argument("--dry-run", action="store_true",
                    help="list what would be posted, without uploading")
     return p.parse_args()

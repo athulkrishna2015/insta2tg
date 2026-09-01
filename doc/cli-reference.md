@@ -79,4 +79,6 @@ See [Login](login.md) for details and priority order.
 | `--no-source` | off | Omit the Instagram source link from the caption |
 | `--append-text TEXT` | — | Extra text appended to every caption |
 | `--ignore-seen` | off | Upload regardless of seen-history; record nothing in state |
+| `--resume` | off | Resume from last uploaded post per Instagram source per Telegram channel |
+| `--dp` | off | Also upload profile picture if it changed since last upload |
 | `--dry-run` | off | List what would be posted without uploading |

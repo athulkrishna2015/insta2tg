@@ -16,7 +16,7 @@ from .caption import enrich_caption
 from .config import human_size, log, warn
 from .fetch import post_date
 from .media import collect_media
-from .state import mark_seen, save_state
+from .state import mark_seen, save_resume, save_state
 
 NUM_RE = re.compile(r"^-?\d+$")
 
@@ -73,7 +73,8 @@ def prepare_item(L, item, args) -> dict:
         raise
 
 
-async def finish_item(tg, channel, prepped: dict, state, args) -> bool:
+async def finish_item(tg, channel, prepped: dict, state, args,
+                       sc_to_target: dict | None = None, chan_key: str = "") -> bool:
     """Async upload stage: send a prepared item and record/clean up."""
     sc = prepped["sc"]
     record = not args.ignore_seen
@@ -93,6 +94,14 @@ async def finish_item(tg, channel, prepped: dict, state, args) -> bool:
             f"{human_size(prepped['size'])} in {dt:.1f}s")
         if record:
             mark_seen(state, sc, True)
+            # save resume point immediately after marking as seen
+            if sc_to_target and chan_key:
+                target = sc_to_target.get(sc)
+                if target:
+                    item = prepped.get("_item")
+                    item_date = post_date(item) if item else None
+                    date_ts = int(item_date.timestamp()) if item_date else int(time.time())
+                    save_resume(state, chan_key, target, sc, date_ts)
         return True
     except Exception as e:
         warn(f"[!] upload failed on {sc}: {e}")

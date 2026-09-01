@@ -29,7 +29,7 @@ Full documentation lives in [`doc/`](doc/index.md):
 | [Telegram channels](doc/telegram-channels.md) | `--channel` forms (@name / ids), permissions |
 | [CLI reference](doc/cli-reference.md) | Every flag with defaults |
 | [Examples](doc/examples.md) | Copy-paste recipes & background service setup |
-| [State management](doc/state-management.md) | `state.json`, first run, `--backfill`, `--since`, dedupe |
+| [State management](doc/state-management.md) | `state.json`, first run, `--backfill`, `--since`, `--resume`, dedupe |
 | [instaloader parity](doc/instaloader-parity.md) | Supported / mapped / N/A features |
 | [Troubleshooting](doc/troubleshooting.md) | Common errors and fixes |
 | [FAQ](doc/faq.md) | Single posts, `--since`, albums, seen-state, captions, 429 |
