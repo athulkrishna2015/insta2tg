@@ -14,8 +14,14 @@ uv sync                          # install dependencies (Python + libs)
 cp .env.example .env             # fill in TG_API_ID / TG_API_HASH
 
 uv run insta2tg <username> --channel @my_channel --dry-run   # preview
-uv run insta2tg <username> --channel @my_channel --loop      # mirror forever
+uv run insta2tg <username> --channel @my_channel --resume --dp --loop  # mirror forever
 ```
+
+## Features
+
+- **`--resume`** — remembers last uploaded post per source per channel, only uploads new content
+- **`--dp`** — detects profile picture changes via SHA-256 hash and uploads new picture
+- **`--verbose`** — clean debug output for troubleshooting
 
 ## Documentation
 

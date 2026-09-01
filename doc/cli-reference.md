@@ -65,6 +65,7 @@ See [Login](login.md) for details and priority order.
 | `--abort-on CODES` | — | Comma-separated HTTP codes that abort everything |
 | `--no-iphone` | off | Don't request iPhone media versions |
 | `-q`, `--quiet` | off | Suppress informational output |
+| `-v`, `--verbose` | off | Enable debug logging for troubleshooting |
 
 ## Mirror behaviour (insta2tg-specific)
 
