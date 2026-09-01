@@ -1,11 +1,13 @@
 """Global runtime config and logging helpers."""
 
+import logging
 import os
 import sys
 from datetime import datetime
 from pathlib import Path
 
 QUIET = False
+VERBOSE = False
 
 
 def set_quiet(q: bool) -> None:
@@ -13,9 +15,24 @@ def set_quiet(q: bool) -> None:
     QUIET = q
 
 
+def set_verbose(v: bool) -> None:
+    global VERBOSE
+    VERBOSE = v
+    if v:
+        logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
+        # suppress noisy third-party loggers
+        for logger in ("httpx", "httpcore", "telethon", "urllib3"):
+            logging.getLogger(logger).setLevel(logging.WARNING)
+
+
 def log(msg: str) -> None:
     if not QUIET:
         print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
+
+
+def debug(msg: str) -> None:
+    if VERBOSE:
+        logging.debug(msg)
 
 
 def warn(msg: str) -> None:

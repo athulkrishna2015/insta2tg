@@ -11,7 +11,7 @@ from pathlib import Path
 import instaloader
 from telethon import TelegramClient
 
-from .config import load_env, log, set_quiet, warn
+from .config import debug, load_env, log, set_quiet, set_verbose, warn
 from .fetch import fetch_new_items, post_date, resolve_since_post
 from .filters import build_filter
 from .session import build_loader
@@ -55,9 +55,11 @@ async def _upload_dp(tg, channel, L, target, state, args) -> bool:
     """Check if profile picture changed (hash-based) and upload if needed."""
     chan_key = args.channel
     try:
+        debug(f"[_upload_dp] loading profile for {target}")
         profile = instaloader.Profile.from_username(L.context, target)
         url = profile.profile_pic_url
         if not url:
+            debug(f"[_upload_dp] no profile_pic_url for {target}")
             return False
 
         # download current dp to compute hash
@@ -71,6 +73,8 @@ async def _upload_dp(tg, channel, L, target, state, args) -> bool:
             # compute hash and compare with stored
             current_hash = file_hash(dp_path)
             last_dp = load_dp(state, chan_key, target)
+            debug(f"[_upload_dp] stored hash: {last_dp.get('hash') if last_dp else None}")
+            debug(f"[_upload_dp] current hash: {current_hash}")
             if last_dp and last_dp.get("hash") == current_hash:
                 return False  # unchanged
 
@@ -147,6 +151,7 @@ async def mirror_items(tg, channel, L, new, state, args, sc_to_target) -> None:
 
 async def run(args) -> None:
     set_quiet(args.quiet)
+    set_verbose(args.verbose)
     load_env()
 
     api_id = os.environ.get("TG_API_ID")

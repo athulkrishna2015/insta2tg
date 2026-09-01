@@ -119,8 +119,10 @@ def parse_args() -> argparse.Namespace:
                          "last upload")
     g.add_argument("-q", "--quiet", action="store_true",
                     help="suppress informational output")
+    g.add_argument("-v", "--verbose", action="store_true",
+                    help="enable debug logging for troubleshooting")
     g.add_argument("--dry-run", action="store_true",
-                   help="list what would be posted, without uploading")
+                    help="list what would be posted, without uploading")
     return p.parse_args()
 
 

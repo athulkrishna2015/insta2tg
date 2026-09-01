@@ -4,7 +4,7 @@ import re
 
 import instaloader
 
-from .config import log
+from .config import debug, log
 from .state import mark_seen
 from .streams import build_streams
 
@@ -48,6 +48,9 @@ def fetch_new_items(L, targets, state, kinds, window, backfill,
     first_run = not known
     new = []
     sc_to_target: dict[str, str] = {}
+    debug(f"[fetch] targets={targets}, kinds={kinds}, window={window}, backfill={backfill}")
+    debug(f"[fetch] since_dt={since_dt}, ignore_seen={ignore_seen}, resume_dates={resume_dates}")
+    debug(f"[fetch] known shortcodes: {list(known.keys())}")
 
     for stream in build_streams(L, targets, kinds, window):
         base = _base_target(stream["label"])
