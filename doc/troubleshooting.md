@@ -57,6 +57,11 @@ seen (posts nothing) unless `--backfill`/`--since` is given.
 **Retry a failed item** — remove its shortcode key from `state.json`
 (see [State management](state-management.md)).
 
+**`401 Unauthorized - "Please wait a few minutes before you try again."`** —
+Instagram rate-limited the session. Stop, wait several minutes, then re-run the
+same command. Uploads already recorded in `state.json` are not repeated, so
+resuming is safe. Reduce pressure with a longer `--delay` if it keeps happening.
+
 ## General notes
 
 - Captions are truncated to Telegram's 1024-char limit; the post link is kept

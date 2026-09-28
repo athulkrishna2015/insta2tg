@@ -5,11 +5,15 @@
 **How do I upload a single post?**
 
 ```bash
-uv run insta2tg --channel @my_channel --ignore-seen -- -CxYz123
+uv run insta2tg --channel @my_channel -- -CxYz123
+# or paste the URL directly:
+uv run insta2tg --channel @my_channel https://www.instagram.com/<user>/p/CxYz123/
 ```
 
-`-shortcode` goes after `--` so it is not read as a flag. Add `-l USER` to use
-your Instagram session and `--no-source` to drop the caption link.
+`-shortcode` goes after `--` so it is not read as a flag; a full post/reel URL
+works as a target too. A post named explicitly is always uploaded, even on a
+first run. Add `-l USER` to use your Instagram session and `--no-source` to drop
+the caption link.
 
 **How do I upload everything after a specific post?**
 
@@ -19,7 +23,8 @@ uv run insta2tg <username> --channel @my_channel \
 ```
 
 A bare shortcode (`--since CxYz123`) works too. Add `-c 100` if more than 30
-posts exist after it, and `--dry-run` to preview first.
+posts exist after it, and `--dry-run` to preview first — a dry run never writes
+`state.json`, so previewing cannot make the real run skip anything.
 
 **Are multi-image / multi-video posts sent as one message?**
 

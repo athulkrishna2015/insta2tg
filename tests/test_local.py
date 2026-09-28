@@ -120,8 +120,27 @@ try:
                              resume_dates={"t": datetime.fromtimestamp(resume_ts, tz=timezone.utc)})
     ok([i.shortcode for i in got] == ["bbb", "ccc"],
        "--resume filters items older than last upload")
+
+    # an explicitly named post (-shortcode / URL) is a command, not history
+    F.build_streams = lambda *a, **k: [{"label": "-Dc6CrAwIJ8L", "items": items,
+                                        "kind": "post", "explicit": True}]
+    st = {"uploaded": {}}
+    got, _ = fetch_new_items(None, ["-Dc6CrAwIJ8L"], st, ["posts"], 10, 0,
+                             lambda i: True, lambda i: True)
+    ok([i.shortcode for i in got] == ["aaa", "bbb", "ccc"] and not st["uploaded"],
+       "explicit shortcode target uploads on first run")
 finally:
     F.build_streams = orig_build_streams
+
+# ------------------------------------------------------------------ targets -
+from insta2tg.targets import parse_target                             # noqa: E402
+
+ok(parse_target("https://www.instagram.com/chloegmoretz/p/Dc6CrAwIJ8L/").value
+   == "Dc6CrAwIJ8L", "post URL -> shortcode")
+ok(parse_target("https://www.instagram.com/u/reel/AbC123/?igsh=x").value
+   == "AbC123", "reel URL with query -> shortcode")
+ok(parse_target("-AbC123").value == "AbC123", "-shortcode unchanged")
+ok(parse_target("chloegmoretz").kind == "profile", "plain username -> profile")
 
 # ------------------------------------------------------- download / upload -
 class FakeL:

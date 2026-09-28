@@ -262,9 +262,6 @@ async def run(args) -> None:
             if args.dry_run:
                 cap = (item.caption or "").replace("\n", " ")[:60]
                 log(f"[dry] {item.shortcode} {post_date(item):%Y-%m-%d} | {cap}")
-                if not args.ignore_seen:
-                    mark_seen(state, item.shortcode, True)
-                    save_state(args.state, state)
 
         if new and not args.dry_run:
             await mirror_items(tg, channel, L, new, state, args, sc_to_target)

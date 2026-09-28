@@ -104,7 +104,7 @@ def build_streams(L, targets, kinds, window: int) -> list[dict]:
                     log(f"[!] shortcode not found: {t.value}")
                     continue
                 streams.append({"label": f"-{t.value}", "items": [post],
-                                "kind": "post"})
+                                "kind": "post", "explicit": True})
         except instaloader.exceptions.ProfileNotExistsException:
             log(f"[!] profile does not exist: {t.value}")
         except instaloader.exceptions.LoginRequiredException:

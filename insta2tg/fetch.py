@@ -74,6 +74,8 @@ def fetch_new_items(L, targets, state, kinds, window, backfill,
             if since_dt is not None:
                 fresh = [i for i in fresh
                          if post_date(i) and post_date(i) > since_dt]
+            elif stream.get("explicit"):
+                pass  # user named this post on the CLI: always upload it
             elif first_run and backfill == 0:
                 for i in items:
                     mark_seen(state, i.shortcode, True)

@@ -1,7 +1,16 @@
 """Target parsing - same syntax as the instaloader CLI."""
 
 from pathlib import Path
+import re
 import sys
+
+# https://www.instagram.com/<user>/p|reel|tv|<shortcode>/... -> shortcode
+URL_RE = re.compile(r"instagram\.com/[^/]+/(?:p|reel|tv|share)/([^/?#]+)/?(?:[?#].*)?$")
+
+
+def from_url(tok: str) -> str | None:
+    m = URL_RE.search(tok)
+    return m.group(1) if m else None
 
 
 class Target:
@@ -14,6 +23,10 @@ class Target:
 
 
 def parse_target(tok: str) -> Target:
+    if "instagram.com/" in tok:
+        sc = from_url(tok)
+        if sc:
+            return Target("shortcode", sc)
     if tok.startswith("@"):
         return Target("followees", tok[1:])
     if tok.startswith("#"):
