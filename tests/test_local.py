@@ -142,6 +142,55 @@ ok(parse_target("https://www.instagram.com/u/reel/AbC123/?igsh=x").value
 ok(parse_target("-AbC123").value == "AbC123", "-shortcode unchanged")
 ok(parse_target("chloegmoretz").kind == "profile", "plain username -> profile")
 
+# ------------------------------------------------------ blocked-metadata path -
+# instaloader #2726/#2743: web_profile_info answers feedback_required / 429,
+# the graphql timeline still lists posts. Check the fallback is wired up.
+import instaloader                                                    # noqa: E402
+import insta2tg.streams as S                                         # noqa: E402
+from insta2tg.targets import Target                                  # noqa: E402
+
+ok(S.TIMELINE_DOC_ID.isdigit(), "timeline doc_id is set")
+
+_response = {"data": {"xdt_api__v1__feed__user_timeline_graphql_connection": {
+    "edges": [{"node": {"id": "1", "shortcode": "abc"}}], "page_info": {}}}}
+
+
+class _Ctx:
+    username = "user"
+
+
+class _L:
+    context = _Ctx()
+    quiet = True
+
+
+ok(S._extract_timeline(_response)["edges"][0]["node"]["shortcode"] == "abc",
+   "timeline response yields edges")
+try:
+    S._extract_timeline({"data": {}})
+    ok(False, "malformed timeline raises")
+except instaloader.exceptions.BadResponseException:
+    ok(True, "malformed timeline raises")
+
+_orig_from_username = instaloader.Profile.from_username
+instaloader.Profile.from_username = staticmethod(
+    lambda *a, **k: (_ for _ in ()).throw(
+        instaloader.exceptions.AbortDownloadException("feedback_required")))
+_orig_timeline = S.timeline_posts
+S.timeline_posts = lambda L, u: [item("abc", 1)]
+try:
+    got = S.build_streams(_L(), [Target("profile", "chloegmoretz")],
+                           ["posts"], 10)
+    ok(len(got) == 1 and got[0]["label"] == "chloegmoretz/posts",
+       "blocked profile metadata falls back to timeline")
+    got = S.build_streams(_L(), [Target("profile", "chloegmoretz")],
+                           ["posts", "stories"], 10)
+    ok([s["kind"] for s in got] == ["post"],
+       "fallback drops kinds needing metadata (stories)")
+finally:
+    instaloader.Profile.from_username = _orig_from_username
+    S.timeline_posts = _orig_timeline
+
 # ------------------------------------------------------- download / upload -
 class FakeL:
     def __init__(self, files=3, delay=0.0):

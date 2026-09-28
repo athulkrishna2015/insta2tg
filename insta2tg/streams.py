@@ -30,6 +30,54 @@ def iter_post_like(profile, kind: str):
     raise ValueError(kind)
 
 
+TIMELINE_DOC_ID = "7898261790222653"
+
+
+def _extract_timeline(response: dict) -> dict:
+    data = response.get("data")
+    feed = (data.get("xdt_api__v1__feed__user_timeline_graphql_connection")
+            if isinstance(data, dict) else None)
+    if not isinstance(feed, dict):
+        raise instaloader.exceptions.BadResponseException(
+            "Instagram returned no valid profile timeline.")
+    return feed
+
+
+def timeline_posts(L, username: str):
+    """Posts of a profile via the graphql timeline, skipping the profile
+    metadata request. Fallback for when web_profile_info answers
+    400 feedback_required / 429 (instaloader issue #2726, PR #2743)."""
+    username = username.lstrip("@").lower()
+    return instaloader.nodeiterator.NodeIterator(
+        context=L.context,
+        edge_extractor=_extract_timeline,
+        node_wrapper=lambda n: instaloader.Post.from_iphone_struct(L.context, n),
+        query_variables={"data": {"count": 12,
+                                  "include_relationship_info": True,
+                                  "latest_besties_reel_media": True,
+                                  "latest_reel_media": True},
+                         "username": username},
+        query_referer=f"https://www.instagram.com/{username}/",
+        doc_id=TIMELINE_DOC_ID,
+        query_hash=None,
+    )
+
+
+class _TimelineProfile:
+    """Stand-in for instaloader.Profile when only the timeline is reachable.
+
+    Post-only: tagged/igtv/stories/highlights need the metadata request and
+    are therefore unavailable on this path."""
+
+    def __init__(self, L, username: str):
+        self._L, self.username, self.userid = L, username, None
+
+    def get_posts(self):
+        return timeline_posts(self._L, self.username)
+
+    get_reels = get_posts
+
+
 def profile_streams(L, profile, kinds, label: str, window: int) -> list[dict]:
     """Build download streams for one profile according to --content."""
     streams = []
@@ -53,8 +101,19 @@ def build_streams(L, targets, kinds, window: int) -> list[dict]:
     for t in targets:
         try:
             if t.kind == "profile":
-                prof = instaloader.Profile.from_username(L.context, t.value)
-                streams += profile_streams(L, prof, kinds, t.value, window)
+                k = kinds
+                try:
+                    prof = instaloader.Profile.from_username(L.context, t.value)
+                except (instaloader.exceptions.AbortDownloadException,
+                        instaloader.exceptions.ConnectionException) as e:
+                    # metadata endpoint blocked (feedback_required / 429):
+                    # fall back to the graphql timeline, posts only.
+                    log(f"[ig] {t.value}: profile metadata blocked ({e}); "
+                        f"using timeline fallback")
+                    require_login(L)
+                    prof = _TimelineProfile(L, t.value)
+                    k = ["posts"] if set(kinds) & {"posts", "reels"} else kinds
+                streams += profile_streams(L, prof, k, t.value, window)
 
             elif t.kind == "followees":
                 require_login(L)

@@ -62,6 +62,24 @@ Instagram rate-limited the session. Stop, wait several minutes, then re-run the
 same command. Uploads already recorded in `state.json` are not repeated, so
 resuming is safe. Reduce pressure with a longer `--delay` if it keeps happening.
 
+**`400 Bad Request - "fail" status, message "feedback_required"`** (also seen as
+`429` on `web_profile_info`) — Instagram is blocking the *profile metadata*
+request for your account, while post lookups still work. insta2tg notices and
+falls back to the graphql timeline automatically:
+
+```
+[ig] chloegmoretz: profile metadata blocked (...); using timeline fallback
+```
+
+The fallback is posts/reels only, because `tagged`, `igtv`, `stories` and
+`highlights` need the metadata request. It requires a logged-in session. Nothing
+to fix locally — see instaloader [#2726](https://github.com/instaloader/instaloader/issues/2726)
+and PR [#2743](https://github.com/instaloader/instaloader/pull/2743).
+
+**`--load-cookies` / `--cookiefile` say "cannot import browser cookies"** —
+instaloader removed browser cookie import; `instaloader.utils` no longer exists
+in 4.15+. Create a session with `--login <username>` instead.
+
 ## General notes
 
 - Captions are truncated to Telegram's 1024-char limit; the post link is kept
